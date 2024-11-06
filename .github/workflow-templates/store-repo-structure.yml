@@ -1,0 +1,92 @@
+# File: .github/workflow-templates/store-repo-structure.yml
+
+name: Store Repository Structure in MongoDB
+
+on:
+  create:
+    types: [repository]
+  push:
+    branches:
+      - '*'
+    paths:
+      - '**/*.md'
+      - '**/*.jpg'
+      - '**/*.jpeg'
+      - '**/*.png'
+      - '**/*.mp4'
+      - '**/assets/**'
+  
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - '**/*.md'
+      - '**/*.jpg'
+      - '**/*.jpeg'
+      - '**/*.png'
+      - '**/*.mp4'
+      - '**/assets/**'
+    
+  repository_dispatch:
+    types: [file_change]
+    
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  setup_workflow:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'create' && github.event.ref_type == 'repository'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up workflow files
+        run: |
+          mkdir -p .github/workflows
+          cat > .github/workflows/store-repo-structure.yml << 'EOL'
+          ${{ github.workspace }}/.github/workflow-templates/store-repo-structure.yml
+          EOL
+          
+      - name: Set up Python script
+        run: |
+          cat > store_repo_structure.py << 'EOL'
+          ${{ github.workspace }}/store_repo_structure.py
+          EOL
+          
+      - name: Commit workflow files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Set up repository structure tracking workflow"
+          git push
+
+  storeRepoStructure:
+    runs-on: ubuntu-latest
+    needs: setup_workflow
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          pip install PyGithub pymongo python-dotenv
+
+      - name: Store Repository Structure in MongoDB
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          python store_repo_structure.py
+        
+      - name: Notify on completion
+        if: always()
+        run: |
+          echo "Repository structure update completed"

@@ -1,0 +1,14 @@
+{
+    "name": "Store Repository Structure Workflow",
+    "description": "Automatically store repository structure in MongoDB when files change",
+    "iconName": "example-icon",
+    "categories": ["automation", "mongodb"],
+    "filePatterns": [
+        "**/*.md",
+        "**/*.jpg",
+        "**/*.jpeg",
+        "**/*.png",
+        "**/*.mp4",
+        "**/assets/**"
+    ]
+}
